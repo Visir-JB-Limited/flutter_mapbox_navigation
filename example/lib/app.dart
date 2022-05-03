@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mapbox_navigation/flutter_mapbox_navigation.dart';
+import 'package:flutter_mapbox_nav/flutter_mapbox_nav.dart';
 
 class SampleNavigationApp extends StatefulWidget {
   @override
@@ -66,8 +66,8 @@ class _SampleNavigationAppState extends State<SampleNavigationApp> {
 
     _directions = MapBoxNavigation(onRouteEvent: _onEmbeddedRouteEvent);
     _options = MapBoxOptions(
-      //initialLatitude: 36.1175275,
-      //initialLongitude: -115.1839524,
+        //initialLatitude: 36.1175275,
+        //initialLongitude: -115.1839524,
         zoom: 15.0,
         tilt: 0.0,
         bearing: 0.0,
@@ -139,7 +139,7 @@ class _SampleNavigationAppState extends State<SampleNavigationApp> {
                                 wayPoints: wayPoints,
                                 options: MapBoxOptions(
                                     mode:
-                                    MapBoxNavigationMode.drivingWithTraffic,
+                                        MapBoxNavigationMode.drivingWithTraffic,
                                     simulateRoute: false,
                                     language: "en",
                                     units: VoiceUnits.metric));
@@ -194,17 +194,18 @@ class _SampleNavigationAppState extends State<SampleNavigationApp> {
                           onPressed: _isNavigating
                               ? null
                               : () {
-                            if (_routeBuilt) {
-                              _controller.clearRoute();
-                            } else {
-                              var wayPoints = <WayPoint>[];
-                              wayPoints.add(_home);
-                              wayPoints.add(_store);
-                              _isMultipleStop = wayPoints.length > 2;
-                              _controller.buildRoute(
-                                  wayPoints: wayPoints, options: _options);
-                            }
-                          },
+                                  if (_routeBuilt) {
+                                    _controller.clearRoute();
+                                  } else {
+                                    var wayPoints = <WayPoint>[];
+                                    wayPoints.add(_home);
+                                    wayPoints.add(_store);
+                                    _isMultipleStop = wayPoints.length > 2;
+                                    _controller.buildRoute(
+                                        wayPoints: wayPoints,
+                                        options: _options);
+                                  }
+                                },
                         ),
                         SizedBox(
                           width: 10,
@@ -213,8 +214,8 @@ class _SampleNavigationAppState extends State<SampleNavigationApp> {
                           child: Text("Start "),
                           onPressed: _routeBuilt && !_isNavigating
                               ? () {
-                            _controller.startNavigation();
-                          }
+                                  _controller.startNavigation();
+                                }
                               : null,
                         ),
                         SizedBox(
@@ -224,8 +225,8 @@ class _SampleNavigationAppState extends State<SampleNavigationApp> {
                           child: Text("Cancel "),
                           onPressed: _isNavigating
                               ? () {
-                            _controller.finishNavigation();
-                          }
+                                  _controller.finishNavigation();
+                                }
                               : null,
                         )
                       ],
