@@ -336,20 +336,6 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
                 .continueStraight(!allowsUTurnAtWayPoints)
                 .voiceUnits(navigationVoiceUnits)
                 .annotations(DirectionsCriteria.ANNOTATION_DISTANCE)
-                // provide the bearing for the origin of the request to ensure
-                // that the returned route faces in the direction of the current user movement
-                /*
-                .bearingsList(
-                    listOf(
-                        Bearing.builder()
-                            .angle(originLocation.bearing.toDouble())
-                            .degrees(45.0)
-                            .build(),
-                        null
-                    )
-                )
-                 */
-                .layersList(listOf(mapboxNavigation.getZLevel(), null))
                 .build()
             , object : RouterCallback {
 
