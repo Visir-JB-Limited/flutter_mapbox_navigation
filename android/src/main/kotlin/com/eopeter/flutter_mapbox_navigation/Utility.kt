@@ -207,7 +207,7 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
         // load map style
         mapboxMap.loadStyleUri(
-            Style.MAPBOX_STREETS
+            Style.TRAFFIC_DAY
         ) {
             // add long click listener that search for a route to the clicked destination
             binding.mapView.gestures.addOnMapLongClickListener { point ->
@@ -235,21 +235,6 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
         // set initial sounds button state
         binding.soundButton.unmute()
-
-        binding.mapView.location.apply {
-            setLocationProvider(navigationLocationProvider)
-
-            // Uncomment this block of code if you want to see a circular puck with arrow.
-            locationPuck = LocationPuck2D(
-                bearingImage = ContextCompat.getDrawable(
-                    context,
-                    R.drawable.mapbox_navigation_puck_icon
-                )
-            )
-            // When true, the blue circular puck is shown on the map. If set to false, user
-            // location in the form of puck will not be shown on the map.
-            enabled = true
-        }
 
         // initialize navigation trip observers
         registerObservers()
@@ -492,9 +477,9 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
                     // Centers the camera to the lng/lat specified.
                     .center(Point.fromLngLat(longitude, latitude))
                     // specifies the zoom value. Increase or decrease to zoom in or zoom out
-                    .zoom(12.0)
+                    .zoom(15.0)
                     // specify frame of reference from the center.
-                    .padding(EdgeInsets(500.0, 0.0, 0.0, 0.0))
+                    //.padding(EdgeInsets(500.0, 0.0, 0.0, 0.0))
                     .build(),
                 mapAnimationOptions
             )
