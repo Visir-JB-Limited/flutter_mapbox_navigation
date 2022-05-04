@@ -183,12 +183,12 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
         speechApi = MapboxSpeechApi(
             activity,
             token,
-            Locale.US.language
+            Locale.UK.language
         )
         voiceInstructionsPlayer = MapboxVoiceInstructionsPlayer(
             activity,
             token,
-            Locale.US.language
+            Locale.UK.language
         )
 
         // initialize route line, the withRouteLineBelowLayerId is specified to place
@@ -266,6 +266,9 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
             "buildRoute" -> {
                 buildRoute(methodCall, result)
             }
+            "updateCamera" -> {
+                updateCamera(methodCall, result)
+            }
             "clearRoute" -> {
                 clearRoute(methodCall, result)
             }
@@ -338,7 +341,6 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
                 .annotations(DirectionsCriteria.ANNOTATION_DISTANCE)
                 .build()
             , object : RouterCallback {
-
                 override fun onRoutesReady(routes: List<DirectionsRoute>,
                                            routerOrigin: RouterOrigin) {
 
@@ -477,19 +479,26 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
     }
 
-    private fun updateCamera(location: Location) {
-        val mapAnimationOptions = MapAnimationOptions.Builder().duration(1500L).build()
-        binding.mapView.camera.easeTo(
-            CameraOptions.Builder()
-                // Centers the camera to the lng/lat specified.
-                .center(Point.fromLngLat(location.longitude, location.latitude))
-                // specifies the zoom value. Increase or decrease to zoom in or zoom out
-                .zoom(12.0)
-                // specify frame of reference from the center.
-                .padding(EdgeInsets(500.0, 0.0, 0.0, 0.0))
-                .build(),
-            mapAnimationOptions
-        )
+    private fun updateCamera(methodCall: MethodCall, result: MethodChannel.Result) {
+        var arguments = methodCall.arguments as? Map<*, *>
+
+        if(arguments != null) {
+            var latitude = arguments["latitude"] as Double;
+            var longitude = arguments["longitude"] as Double;
+
+            val mapAnimationOptions = MapAnimationOptions.Builder().duration(1500L).build()
+            binding.mapView.camera.easeTo(
+                CameraOptions.Builder()
+                    // Centers the camera to the lng/lat specified.
+                    .center(Point.fromLngLat(longitude, latitude))
+                    // specifies the zoom value. Increase or decrease to zoom in or zoom out
+                    .zoom(12.0)
+                    // specify frame of reference from the center.
+                    .padding(EdgeInsets(500.0, 0.0, 0.0, 0.0))
+                    .build(),
+                mapAnimationOptions
+            )
+        }
     }
 
     private fun setOptions(arguments: Map<*, *>)

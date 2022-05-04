@@ -1,3 +1,13 @@
+## 0.1.4
+* expose updateCameraPosition method to flutter code
+
+## 0.1.3
+* change navigation route profile default to DRIVING
+* amend system units to METRIC
+
+## 0.1.2
+* remove layers from route builder
+
 ## 0.1.0
 * breaking changes
 * Android Gradle Upgrade

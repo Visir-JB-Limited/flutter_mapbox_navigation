@@ -40,6 +40,18 @@ class MapBoxNavigationViewController {
       .invokeMethod<double>('getDurationRemaining')
       .then<double>((dynamic result) => result);
 
+  ///Set camera to desired lat / lng coordinates
+  Future<bool> updateCameraPosition(
+      {required double latitude, required double longitude}) async {
+    Map<String, dynamic> args = Map<String, dynamic>();
+    args["latitude"] = latitude;
+    args["longitude"] = longitude;
+
+    return await _methodChannel
+        .invokeMethod('updateCamera', args)
+        .then<bool>((dynamic result) => result);
+  }
+
   ///Build the Route Used for the Navigation
   ///
   /// [wayPoints] must not be null. A collection of [WayPoint](longitude, latitude and name). Must be at least 2 or at most 25. Cannot use drivingWithTraffic mode if more than 3-waypoints.
