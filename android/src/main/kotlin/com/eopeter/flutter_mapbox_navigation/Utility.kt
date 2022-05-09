@@ -237,6 +237,8 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
         // initialize navigation trip observers
         registerObservers()
+
+        mapboxNavigation.startTripSession()
     }
 
     override fun onMethodCall(methodCall: MethodCall, result: MethodChannel.Result) {
@@ -333,7 +335,7 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
                     // Draw the route on the map
                     mapboxNavigation.setNavigationRoutes(routes)
                     // move the camera to overview when new route is available
-                    navigationCamera.requestNavigationCameraToOverview()
+//                    navigationCamera.requestNavigationCameraToOverview()
                     isBuildingRoute = false
                     //Start Navigation again from new Point, if it was already in Progress
                     if (isNavigationInProgress) {
@@ -431,9 +433,9 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
             }
             mapboxNavigation.startTripSession()
             // show UI elements
-//            binding.soundButton.visibility = View.VISIBLE
-//            binding.routeOverview.visibility = View.VISIBLE
-//            binding.tripProgressCard.visibility = View.VISIBLE
+            // binding.soundButton.visibility = View.VISIBLE
+            // binding.routeOverview.visibility = View.VISIBLE
+            // binding.tripProgressCard.visibility = View.VISIBLE
 
             // move the camera to overview when new route is available
             navigationCamera.requestNavigationCameraToOverview()
@@ -488,6 +490,8 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
                 .center(Point.fromLngLat(location.longitude, location.latitude))
                 // specifies the zoom value. Increase or decrease to zoom in or zoom out
                 .zoom(15.0)
+                // specify frame of reference from the center.
+                .padding(EdgeInsets(500.0, 0.0, 0.0, 0.0))
                 // specify frame of reference from the center.
                 .build(),
             mapAnimationOptions
@@ -863,14 +867,14 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
             // if this is the first location update the activity has received,
             // it's best to immediately move the camera to the current user location
-             if (!firstLocationUpdateReceived) {
-                 firstLocationUpdateReceived = true
-                 navigationCamera.requestNavigationCameraToOverview(
-                     stateTransitionOptions = NavigationCameraTransitionOptions.Builder()
-                         .maxDuration(0) // instant transition
-                         .build()
-                 )
-             }
+            if (!firstLocationUpdateReceived) {
+                firstLocationUpdateReceived = true
+                navigationCamera.requestNavigationCameraToOverview(
+                    stateTransitionOptions = NavigationCameraTransitionOptions.Builder()
+                        .maxDuration(0) // instant transition
+                        .build()
+                )
+            }
         }
     }
 
@@ -882,7 +886,7 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
         viewportDataSource.onRouteProgressChanged(routeProgress)
         viewportDataSource.evaluate()
 
-        // draw the upcoming maneuver arrow on the map
+       // draw the upcoming maneuver arrow on the map
         val style = mapboxMap.getStyle()
         if (style != null) {
             val maneuverArrowResult = routeArrowApi.addUpcomingManeuverArrow(routeProgress)
@@ -924,6 +928,7 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
 
             }
         }
+
     }
 
     /**
@@ -948,8 +953,8 @@ open class TurnByTurn(ctx: Context, act: Activity, bind: NavigationActivityBindi
             }
 
             // update the camera position to account for the new route
-//            viewportDataSource.onRouteChanged(routeUpdateResult.routes.first())
-//            viewportDataSource.evaluate()
+            viewportDataSource.onRouteChanged(routeUpdateResult.routes.first())
+            viewportDataSource.evaluate()
 
             //send a reroute event
             PluginUtilities.sendEvent(MapBoxEvents.REROUTE_ALONG, routeUpdateResult.reason)
