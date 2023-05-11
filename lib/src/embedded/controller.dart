@@ -52,6 +52,20 @@ class MapBoxNavigationViewController {
         .then<bool>((dynamic result) => result);
   }
 
+  /// Clear the built route and resets the map
+  Future<bool?> moveUserLocation(
+      {required double latitude,
+      required double longitude,
+      bool animated = true}) async {
+    Map<String, dynamic> args = <String, dynamic>{};
+    args["location"] = {
+      "latitude": latitude,
+      "longitude": longitude,
+    };
+    args["animated"] = animated;
+    return _methodChannel.invokeMethod('moveUserLocation', args);
+  }
+
   ///Build the Route Used for the Navigation
   ///
   /// [wayPoints] must not be null. A collection of [WayPoint](longitude, latitude and name). Must be at least 2 or at most 25. Cannot use drivingWithTraffic mode if more than 3-waypoints.

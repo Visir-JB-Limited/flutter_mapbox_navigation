@@ -321,10 +321,10 @@ extension NavigationFactory : NavigationViewControllerDelegate {
 
             _eventSink!(progressEventJson)
 
-            if(progress.isFinalLeg && progress.currentLegProgress.userHasArrivedAtWaypoint)
+            /*if(progress.isFinalLeg && progress.currentLegProgress.userHasArrivedAtWaypoint)
             {
                 _eventSink = nil
-            }
+            }*/
         }
     }
 
@@ -352,5 +352,9 @@ extension NavigationFactory : NavigationViewControllerDelegate {
     
     public func navigationViewController(_ navigationViewController: NavigationViewController, shouldRerouteFrom location: CLLocation) -> Bool {
         return _shouldReRoute
+    }
+
+    public func navigationViewController(_ navigationViewController: NavigationViewController, didSubmitArrivalFeedback feedback: EndOfRouteFeedback) {
+        sendEvent(eventType: MapBoxEventType.on_arrival)
     }
 }

@@ -57,6 +57,10 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
             {
                 strongSelf.clearRoute(arguments: arguments, result: result)
             }
+            else if(call.method == "moveUserLocation")
+            {
+                strongSelf.moveUserLocation(arguments: arguments, result: result)
+            }
             else if(call.method == "getDistanceRemaining")
             {
                 result(strongSelf._distanceRemaining)
@@ -157,11 +161,31 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
             return
         }
 
-        setupMapView()
-        self.view().setNeedsDisplay()
+        navigationMapView.removeRoutes()
+        navigationMapView.removeWaypoints();
 
         routeResponse = nil
         sendEvent(eventType: MapBoxEventType.navigation_cancelled)
+    }
+
+    func moveUserLocation(arguments: NSDictionary?, result: @escaping FlutterResult)
+    {
+        guard let oLocation = arguments?["location"] as? NSDictionary else {return}
+        guard let oLatitude = oLocation["latitude"] as? Double else {return}
+        guard let oLongitude = oLocation["longitude"] as? Double else {return}
+        guard let animated = arguments?["animated"] as? Bool else {return}
+
+        setInitialCamera(CLLocationCoordinate2D(latitude: oLatitude, longitude: oLongitude), animated: animated)
+
+        sendEvent(eventType: MapBoxEventType.map_ready)
+    }
+
+    func setInitialCamera(_ coordinate: CLLocationCoordinate2D, animated: Bool = false) {
+        guard let navigationViewportDataSource = navigationMapView.navigationCamera.viewportDataSource as? NavigationViewportDataSource else { return }
+        navigationMapView.layoutIfNeeded() // mapView isn't able to properly convert coordinates before layout.
+        navigationMapView.mapView.mapboxMap.setCamera(to: CameraOptions(center: coordinate,
+                                                      zoom: CGFloat(navigationViewportDataSource.options.followingCameraOptions.zoomRange.upperBound)))
+        navigationMapView.moveUserLocation(to: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude), animated: animated)
     }
 
     func buildRoute(arguments: NSDictionary?, flutterResult: @escaping FlutterResult)
