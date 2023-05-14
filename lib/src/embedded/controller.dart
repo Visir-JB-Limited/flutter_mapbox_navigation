@@ -15,7 +15,7 @@ class MapBoxNavigationViewController {
 
   MapBoxNavigationViewController(
       int id, ValueSetter<RouteEvent>? eventNotifier) {
-    _methodChannel = new MethodChannel('flutter_mapbox_navigation/$id');
+    _methodChannel = MethodChannel('flutter_mapbox_navigation/$id');
     _methodChannel.setMethodCallHandler(_handleMethod);
 
     _eventChannel = EventChannel('flutter_mapbox_navigation/$id/events');
@@ -39,32 +39,6 @@ class MapBoxNavigationViewController {
   Future<double> get durationRemaining => _methodChannel
       .invokeMethod<double>('getDurationRemaining')
       .then<double>((dynamic result) => result);
-
-  ///Set camera to desired lat / lng coordinates
-  Future<bool> updateCameraPosition(
-      {required double latitude, required double longitude}) async {
-    Map<String, dynamic> args = Map<String, dynamic>();
-    args["latitude"] = latitude;
-    args["longitude"] = longitude;
-
-    return await _methodChannel
-        .invokeMethod('updateCamera', args)
-        .then<bool>((dynamic result) => result);
-  }
-
-  /// Clear the built route and resets the map
-  Future<bool?> moveUserLocation(
-      {required double latitude,
-      required double longitude,
-      bool animated = true}) async {
-    Map<String, dynamic> args = <String, dynamic>{};
-    args["location"] = {
-      "latitude": latitude,
-      "longitude": longitude,
-    };
-    args["animated"] = animated;
-    return _methodChannel.invokeMethod('moveUserLocation', args);
-  }
 
   ///Build the Route Used for the Navigation
   ///
@@ -95,10 +69,9 @@ class MapBoxNavigationViewController {
       pointList.add(pointMap);
     }
     var i = 0;
-    var wayPointMap =
-        Map.fromIterable(pointList, key: (e) => i++, value: (e) => e);
+    var wayPointMap = {for (var e in pointList) i++: e};
 
-    Map<String, dynamic> args = Map<String, dynamic>();
+    Map<String, dynamic> args = <String, dynamic>{};
     if (options != null) args = options.toMap();
     args["wayPoints"] = wayPointMap;
 
@@ -116,6 +89,14 @@ class MapBoxNavigationViewController {
   /// Clear the built route and resets the map
   Future<bool?> clearRoute() async {
     return _methodChannel.invokeMethod('clearRoute', null);
+  }
+
+  /// Clear the built route and resets the map
+  Future<bool?> moveUserLocation(double latitude, double longitude) async {
+    Map<String, dynamic> args = <String, dynamic>{};
+    args["Latitude"] = latitude;
+    args["Longitude"] = longitude;
+    return _methodChannel.invokeMethod('moveUserLocation', args);
   }
 
   /// Starts the Navigation
@@ -137,23 +118,22 @@ class MapBoxNavigationViewController {
     switch (call.method) {
       case 'sendFromNative':
         String? text = call.arguments as String?;
-        return new Future.value("Text from native: $text");
+        return Future.value("Text from native: $text");
     }
   }
 
   void _onProgressData(RouteEvent event) {
     if (_routeEventNotifier != null) _routeEventNotifier!(event);
 
-    if (event.eventType == MapBoxEvent.on_arrival)
+    if (event.eventType == MapBoxEvent.on_arrival) {
       _routeEventSubscription.cancel();
+    }
   }
 
   Stream<RouteEvent>? get _streamRouteEvent {
-    if (_onRouteEvent == null) {
-      _onRouteEvent = _eventChannel
-          .receiveBroadcastStream()
-          .map((dynamic event) => _parseRouteEvent(event));
-    }
+    _onRouteEvent ??= _eventChannel
+        .receiveBroadcastStream()
+        .map((dynamic event) => _parseRouteEvent(event));
     return _onRouteEvent;
   }
 
@@ -164,8 +144,9 @@ class MapBoxNavigationViewController {
     if (progressEvent.isProgressEvent!) {
       event = RouteEvent(
           eventType: MapBoxEvent.progress_change, data: progressEvent);
-    } else
+    } else {
       event = RouteEvent.fromJson(map);
+    }
     return event;
   }
 }

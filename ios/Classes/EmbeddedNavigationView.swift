@@ -21,10 +21,10 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
     var selectedRouteIndex = 0
     var routeOptions: NavigationRouteOptions?
     var navigationService: NavigationService!
-    
+
     var _mapInitialized = false;
     var locationManager = CLLocationManager()
-    
+
     init(messenger: FlutterBinaryMessenger, frame: CGRect, viewId: Int64, args: Any?)
     {
         self.frame = frame
@@ -161,8 +161,8 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
             return
         }
 
-        navigationMapView.removeRoutes()
-        navigationMapView.removeWaypoints();
+        setupMapView()
+        self.view().setNeedsDisplay()
 
         routeResponse = nil
         sendEvent(eventType: MapBoxEventType.navigation_cancelled)
@@ -170,21 +170,18 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
 
     func moveUserLocation(arguments: NSDictionary?, result: @escaping FlutterResult)
     {
-        guard let oLocation = arguments?["location"] as? NSDictionary else {return}
-        guard let oLatitude = oLocation["latitude"] as? Double else {return}
-        guard let oLongitude = oLocation["longitude"] as? Double else {return}
-        guard let animated = arguments?["animated"] as? Bool else {return}
+        guard let oLatitude = arguments["latitude"] as? Double else {return}
+        guard let oLongitude = arguments["longitude"] as? Double else {return}
 
-        setInitialCamera(CLLocationCoordinate2D(latitude: oLatitude, longitude: oLongitude), animated: animated)
+        setInitialCamera(CLLocationCoordinate2D(latitude: oLatitude, longitude: oLongitude), animated: true)
 
         sendEvent(eventType: MapBoxEventType.map_ready)
     }
 
     func setInitialCamera(_ coordinate: CLLocationCoordinate2D, animated: Bool = false) {
         guard let navigationViewportDataSource = navigationMapView.navigationCamera.viewportDataSource as? NavigationViewportDataSource else { return }
-        navigationMapView.layoutIfNeeded() // mapView isn't able to properly convert coordinates before layout.
-        navigationMapView.mapView.mapboxMap.setCamera(to: CameraOptions(center: coordinate,
-                                                      zoom: CGFloat(navigationViewportDataSource.options.followingCameraOptions.zoomRange.upperBound)))
+        navigationMapView.layoutIfNeeded()
+        navigationMapView.mapView.mapboxMap.setCamera(to: CameraOptions(center: coordinate, zoom: CGFloat(navigationViewportDataSource.options.followingCameraOptions.zoomRange.upperBound)))
         navigationMapView.moveUserLocation(to: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude), animated: animated)
     }
 
@@ -270,7 +267,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
                 return
             }
             strongSelf.routeResponse = response
-            strongSelf.sendEvent(eventType: MapBoxEventType.route_built)
+            strongSelf.sendEvent(eventType: MapBoxEventType.route_built, data: strongSelf.encodeRouteResponse(response: response))
             strongSelf.navigationMapView?.showcase(response.routes!, routesPresentationStyle: .all(shouldFit: true), animated: true)
             flutterResult(true)
         }
@@ -288,7 +285,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
                                                             locationSource: navLocationManager,
                                                     simulating: self._simulateRoute ? .always : .onPoorGPS)
         navigationService.delegate = self
-        
+
         var dayStyle = CustomDayStyle()
         if(_mapStyleUrlDay != nil){
             dayStyle = CustomDayStyle(url: _mapStyleUrlDay)
@@ -298,21 +295,27 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
             nightStyle.mapStyleURL = URL(string: _mapStyleUrlNight!)!
         }
         let navigationOptions = NavigationOptions(styles: [dayStyle, nightStyle], navigationService: navigationService)
+
+        // Remove previous navigation view and controller if any
+        if(_navigationViewController?.view != nil){
+            _navigationViewController!.view.removeFromSuperview()
+            _navigationViewController?.removeFromParent()
+        }
+
         _navigationViewController = NavigationViewController(for: response, routeIndex: selectedRouteIndex, routeOptions: routeOptions!, navigationOptions: navigationOptions)
         _navigationViewController!.delegate = self
 
         let flutterViewController = UIApplication.shared.delegate?.window?!.rootViewController as! FlutterViewController
         flutterViewController.addChild(_navigationViewController!)
 
-        let container = self.view()
-        container.addSubview(_navigationViewController!.view)
+        self.navigationMapView.addSubview(_navigationViewController!.view)
         _navigationViewController!.view.translatesAutoresizingMaskIntoConstraints = false
-        constraintsWithPaddingBetween(holderView: container, topView: _navigationViewController!.view, padding: 0.0)
+        constraintsWithPaddingBetween(holderView: self.navigationMapView, topView: _navigationViewController!.view, padding: 0.0)
         flutterViewController.didMove(toParent: flutterViewController)
         result(true)
 
     }
-    
+
     func constraintsWithPaddingBetween(holderView: UIView, topView: UIView, padding: CGFloat) {
         guard holderView.subviews.contains(topView) else {
             return
@@ -339,7 +342,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
         navigationViewportDataSource.followingMobileCamera.padding = .zero
         navigationMapView.navigationCamera.viewportDataSource = navigationViewportDataSource
     }
-    
+
     func moveCameraToCenter()
     {
         var duration = 5.0
@@ -347,7 +350,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
         {
             duration = 0.0
         }
-        
+
         let navigationViewportDataSource = NavigationViewportDataSource(navigationMapView.mapView, viewportDataSourceType: .raw)
         navigationViewportDataSource.options.followingCameraOptions.zoomUpdatesAllowed = false
         navigationViewportDataSource.followingMobileCamera.zoom = 13.0
@@ -355,7 +358,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
         navigationViewportDataSource.followingMobileCamera.padding = .zero
         //navigationViewportDataSource.followingMobileCamera.center = mapView?.centerCoordinate
         navigationMapView.navigationCamera.viewportDataSource = navigationViewportDataSource
-        
+
         // Create a camera that rotates around the same center point, rotating 180°.
         // `fromDistance:` is meters above mean sea level that an eye would have to be in order to see what the map view is showing.
         //let camera = NavigationCamera( Camera(lookingAtCenter: mapView.centerCoordinate, altitude: 2500, pitch: 15, heading: 180)
@@ -368,7 +371,7 @@ public class FlutterMapboxNavigationView : NavigationFactory, FlutterPlatformVie
 }
 
 extension FlutterMapboxNavigationView : NavigationServiceDelegate {
-    
+
     public func navigationService(_ service: NavigationService, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation) {
         _lastKnownLocation = location
         _distanceRemaining = progress.distanceRemaining
@@ -394,7 +397,7 @@ extension FlutterMapboxNavigationView : NavigationServiceDelegate {
 }
 
 extension FlutterMapboxNavigationView : NavigationMapViewDelegate {
-    
+
 //    public func mapView(_ mapView: NavigationMapView, didFinishLoading style: Style) {
 //        _mapInitialized = true
 //        sendEvent(eventType: MapBoxEventType.map_ready)
@@ -408,24 +411,24 @@ extension FlutterMapboxNavigationView : NavigationMapViewDelegate {
         // Wait for the map to load before initiating the first camera movement.
         moveCameraToCenter()
     }
-    
+
 }
 
 extension FlutterMapboxNavigationView : UIGestureRecognizerDelegate {
-    
+
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
-    
+
     @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .ended else { return }
         let location = navigationMapView.mapView.mapboxMap.coordinate(for: gesture.location(in: navigationMapView.mapView))
         requestRoute(destination: location)
     }
-    
+
     func requestRoute(destination: CLLocationCoordinate2D) {
         sendEvent(eventType: MapBoxEventType.route_building)
-        
+
         guard let userLocation = navigationMapView.mapView.location.latestLocation else { return }
         let location = CLLocation(latitude: userLocation.coordinate.latitude,
                                   longitude: userLocation.coordinate.longitude)
@@ -433,7 +436,7 @@ extension FlutterMapboxNavigationView : UIGestureRecognizerDelegate {
         let destinationWaypoint = Waypoint(coordinate: destination)
 
         let routeOptions = NavigationRouteOptions(waypoints: [userWaypoint, destinationWaypoint])
-        
+
         Directions.shared.calculate(routeOptions) { [weak self] (session, result) in
 
             if let strongSelf = self {
@@ -447,7 +450,7 @@ extension FlutterMapboxNavigationView : UIGestureRecognizerDelegate {
                         strongSelf.sendEvent(eventType: MapBoxEventType.route_build_failed)
                         return
                     }
-                    strongSelf.sendEvent(eventType: MapBoxEventType.route_built)
+                    strongSelf.sendEvent(eventType: MapBoxEventType.route_built, data: strongSelf.encodeRouteResponse(response: response))
                     strongSelf.routeOptions = routeOptions
                     strongSelf._routes = routes
                     strongSelf.navigationMapView.show(routes)
@@ -459,5 +462,5 @@ extension FlutterMapboxNavigationView : UIGestureRecognizerDelegate {
 
         }
     }
-    
+
 }
